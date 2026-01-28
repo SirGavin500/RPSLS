@@ -22,7 +22,7 @@ let aTies = 0;
 // Change this to our API endpoint that returns a random move as a string 
 // Example  options your api could return rock paper scissors
 // Create A variable to store the API URL
-const aApiUrl = "https://rpsdemov1-bad6e5b0eff8bxdc.westus3-01.azurewebsites.net/api/rps/rps";
+const aApiUrl = "https://backendrspgt-gndcgra5c6d2f8au.westus3-01.azurewebsites.net/RPS/ComputerRnd";
 
 // ================= DOM REFERENCES =================
 
