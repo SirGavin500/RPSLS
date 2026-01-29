@@ -1,11 +1,9 @@
-// ==============================
-// CONFIG / STATE
-// ==============================
+
 
 const aApiUrl =
   "https://backendrspgt-gndcgra5c6d2f8au.westus3-01.azurewebsites.net/RPS/ComputerRnd";
 
-let aMode = "cpu"; // "cpu" or "pvp"
+let aMode = "cpu"; //pvp also
 let aP1Pick = "";
 let aP2Pick = "";
 
@@ -15,9 +13,7 @@ let aP2Score = 0;
 let aWinTarget = 1;
 let aGameOver = false;
 
-// ==============================
 // DOM ELEMENTS
-// ==============================
 
 // Player 1 buttons
 const aBtnP1Rock = document.getElementById("btnP1Rock");
@@ -48,9 +44,7 @@ const aRoundResultEl = document.getElementById("roundResult");
 const aP1ScoreEl = document.getElementById("p1Score");
 const aP2ScoreEl = document.getElementById("p2Score");
 
-// ==============================
 // MATCH MODE
-// ==============================
 
 function aSetMatchMode(aWinsNeeded) {
   aWinTarget = aWinsNeeded;
@@ -77,9 +71,7 @@ aBtnMatch1.addEventListener("click", () => aSetMatchMode(1));
 aBtnMatch3.addEventListener("click", () => aSetMatchMode(3));
 aBtnMatch4.addEventListener("click", () => aSetMatchMode(4));
 
-// ==============================
-// API (CPU CHOICE)
-// ==============================
+// API fetch I had AI help me with this because it wouldnt accept my api data when i did it the way before.
 
 function aGetCpuChoiceFromApi() {
   return fetch(aApiUrl)
@@ -93,15 +85,13 @@ function aGetCpuChoiceFromApi() {
       throw new Error("Bad data");
     })
     .catch(() => {
-      // fallback so game NEVER freezes
       const fallback = ["rock", "paper", "scissors", "lizard", "spock"];
       return fallback[Math.floor(Math.random() * fallback.length)];
     });
 }
 
-// ==============================
+
 // GAME LOGIC
-// ==============================
 
 function aGetWinner(aP1, aP2) {
   if (aP1 === aP2) return "tie";
@@ -146,14 +136,11 @@ function aPlayRound() {
     aGameOver = true;
   }
 
-  // reset picks for next round
   aP1Pick = "";
   aP2Pick = "";
 }
 
-// ==============================
 // HANDLERS
-// ==============================
 
 function aHandleP1Pick(aPick) {
   if (aGameOver) return;
@@ -185,9 +172,7 @@ function aHandleP2Pick(aPick) {
   aEnableP2Buttons(false);
 }
 
-// ==============================
 // ENABLE / DISABLE P2 BUTTONS
-// ==============================
 
 function aEnableP2Buttons(enable) {
   aBtnP2Rock.disabled = !enable;
@@ -197,14 +182,10 @@ function aEnableP2Buttons(enable) {
   aBtnP2Spock.disabled = !enable;
 }
 
-// ==============================
 // At game start, disable P2 buttons
-// ==============================
 aEnableP2Buttons(false);
 
-// ==============================
 // MODE SWITCH (CPU / PVP)
-// ==============================
 
 function aSetMode(newMode) {
   aMode = newMode;
@@ -231,9 +212,7 @@ function aSetMode(newMode) {
 aBtnModeCpu.onclick = () => aSetMode("cpu");
 aBtnModePvp.onclick = () => aSetMode("pvp");
 
-// ==============================
 // UI HELPERS
-// ==============================
 
 function aUpdateScoreUI() {
   aP1ScoreEl.textContent = aP1Score;
@@ -249,9 +228,7 @@ function aResetScores() {
   document.getElementById("p2Pick").textContent = "-";
 }
 
-// ==============================
 // BUTTON EVENTS
-// ==============================
 
 // Player 1
 aBtnP1Rock.onclick = () => aHandleP1Pick("rock");
@@ -267,14 +244,11 @@ aBtnP2Scissors.onclick = () => aHandleP2Pick("scissors");
 aBtnP2Lizard.onclick = () => aHandleP2Pick("lizard");
 aBtnP2Spock.onclick = () => aHandleP2Pick("spock");
 
-// ==============================
 // CLEAR PICKS / RESET BUTTONS
-// ==============================
 
 const aBtnPlayAgain = document.getElementById("btnPlayAgain");
 const aBtnReset = document.getElementById("btnReset");
 
-// Play Again: clears picks but keeps scores and mode
 aBtnPlayAgain.onclick = () => {
   aP1Pick = "";
   aP2Pick = "";
@@ -284,7 +258,6 @@ aBtnPlayAgain.onclick = () => {
   document.getElementById("p2Pick").textContent = "-";
 };
 
-// Reset Game: clears scores, picks, and sets mode back to CPU, match to 1 win
 aBtnReset.onclick = () => {
   aP1Score = 0;
   aP2Score = 0;
