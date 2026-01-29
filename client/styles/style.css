@@ -78,3 +78,8 @@ h2 { margin: 0 0 12px; font-size: 1.1rem; }
   filter: blur(8px);
   user-select: none;
 }
+
+.Rules{
+  text-align: center;
+  font-size: medium;
+}
