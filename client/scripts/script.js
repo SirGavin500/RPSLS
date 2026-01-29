@@ -1,329 +1,303 @@
-// Game State
-// Store the current game mode
-// CPU = player vs computer
-// pvp= player vs player
-let aMode = "cpu";
+// ==============================
+// CONFIG / STATE
+// ==============================
 
-// In Pvp mode player 1 picks first
-// We temporarily store player 1's choice here
-// Until Player 2 makes their choice
-let aPendingChoice = "";
+const aApiUrl =
+  "https://backendrspgt-gndcgra5c6d2f8au.westus3-01.azurewebsites.net/RPS/ComputerRnd";
 
-// Track Player 1 total wins
+let aMode = "cpu"; // "cpu" or "pvp"
+let aP1Pick = "";
+let aP2Pick = "";
+
 let aP1Score = 0;
-
-// Track Player 2 / CPU total wins
 let aP2Score = 0;
 
-// Tracks total ties
-let aTies = 0;
+let aWinTarget = 1;
+let aGameOver = false;
 
-// API Configuration
-// Change this to our API endpoint that returns a random move as a string 
-// Example  options your api could return rock paper scissors
-// Create A variable to store the API URL
-const aApiUrl = "https://backendrspgt-gndcgra5c6d2f8au.westus3-01.azurewebsites.net/RPS/ComputerRnd";
+// ==============================
+// DOM ELEMENTS
+// ==============================
 
-// ================= DOM REFERENCES =================
-
-// Gets the CPU mode button from the HTML
-const aBtnModeCpu = document.getElementById("btnModeCpu");
-
-// Gets the PVP mode button from the HTML
-const aBtnModePvp = document.getElementById("btnModePvp");
-
-// Gets the text element that explains the current mode
-const aModeHint = document.getElementById("modeHint");
-
-// Gets the element that displays Player 1's choice
-const aP1PickEl = document.getElementById("p1Pick");
-
-// Gets the element that displays Player 2's choice
-const aP2PickEl = document.getElementById("p2Pick");
-
-// Gets the element that displays the result of the round
-const aRoundResultEl = document.getElementById("roundResult");
-
-// Gets the entire Player 2 section (hidden in CPU mode)
-const aP2Section = document.getElementById("p2Section");
-
-// Gets the hint text shown to Player 2
-const aP2Hint = document.getElementById("p2Hint");
-
-// Gets the element that displays Player 1's score
-const aP1ScoreEl = document.getElementById("p1Score");
-
-// Gets the element that displays Player 2's score
-const aP2ScoreEl = document.getElementById("p2Score");
-
-// Gets the element that displays tie count
-const aTiesEl = document.getElementById("ties");
-
-// Gets the "Play Again" button
-const aBtnPlayAgain = document.getElementById("btnPlayAgain");
-
-// Gets the "Reset Game" button
-const aBtnReset = document.getElementById("btnReset");
-
-// Player 1 choice buttons
+// Player 1 buttons
 const aBtnP1Rock = document.getElementById("btnP1Rock");
 const aBtnP1Paper = document.getElementById("btnP1Paper");
 const aBtnP1Scissors = document.getElementById("btnP1Scissors");
+const aBtnP1Lizard = document.getElementById("btnP1Lizard");
+const aBtnP1Spock = document.getElementById("btnP1Spock");
 
-// Player 2 choice buttons (only used in PVP mode)
+// Player 2 buttons
 const aBtnP2Rock = document.getElementById("btnP2Rock");
 const aBtnP2Paper = document.getElementById("btnP2Paper");
 const aBtnP2Scissors = document.getElementById("btnP2Scissors");
+const aBtnP2Lizard = document.getElementById("btnP2Lizard");
+const aBtnP2Spock = document.getElementById("btnP2Spock");
 
-// ================= HELPER FUNCTIONS =================
+// Mode buttons
+const aBtnModeCpu = document.getElementById("btnModeCpu");
+const aBtnModePvp = document.getElementById("btnModePvp");
 
-// Function switches the game mode between CPU and PVP
-// This function resets round state and updates the UI
-function aSetMode(aNewMode) {
-  aMode = aNewMode;
+// Match buttons
+const aBtnMatch1 = document.getElementById("btnMatch1");
+const aBtnMatch3 = document.getElementById("btnMatch3");
+const aBtnMatch4 = document.getElementById("btnMatch4");
+const aMatchHint = document.getElementById("matchHint");
 
-  // Clear any stored player 1 choice
-  aPendingChoice = "";
+// UI
+const aRoundResultEl = document.getElementById("roundResult");
+const aP1ScoreEl = document.getElementById("p1Score");
+const aP2ScoreEl = document.getElementById("p2Score");
 
-  // Reset the UI display
-  aClearPicksUI();
+// ==============================
+// MATCH MODE
+// ==============================
 
-  // If CPU mode is selected
-  if (aMode === "cpu") {
-    // Highlight the CPU mode button
-    aBtnModeCpu.classList.add("active");
+function aSetMatchMode(aWinsNeeded) {
+  aWinTarget = aWinsNeeded;
+  aGameOver = false;
+  aResetScores();
 
-    // Remove highlight from PVP mode button
-    aBtnModePvp.classList.remove("active");
+  aBtnMatch1.classList.remove("active");
+  aBtnMatch3.classList.remove("active");
+  aBtnMatch4.classList.remove("active");
 
-    // Hide player 2 controls
-    aP2Section.style.display = "none";
-
-    // Update the instructions
-    aModeHint.textContent = "You are playing against the CPU.";
+  if (aWinsNeeded === 1) {
+    aBtnMatch1.classList.add("active");
+    aMatchHint.textContent = "First to 1 win";
+  } else if (aWinsNeeded === 3) {
+    aBtnMatch3.classList.add("active");
+    aMatchHint.textContent = "First to 3 wins (Best of 5)";
   } else {
-    // Highlight the PVP mode button
-    aBtnModePvp.classList.add("active");
-
-    // Remove highlight from CPU mode button
-    aBtnModeCpu.classList.remove("active");
-
-    // Show player 2 controls
-    aP2Section.style.display = "block";
-
-    // Update the instructions
-    aModeHint.textContent = "Player 1, make your choice.";
-    aP2Hint.textContent = "Waiting for Player 1...";
+    aBtnMatch4.classList.add("active");
+    aMatchHint.textContent = "First to 4 wins (Best of 7)";
   }
 }
 
-// Clears the visual display of the current round
-function aClearPicksUI() {
-  // Reset player 1 pick display
-  aP1PickEl.textContent = "-";
+aBtnMatch1.addEventListener("click", () => aSetMatchMode(1));
+aBtnMatch3.addEventListener("click", () => aSetMatchMode(3));
+aBtnMatch4.addEventListener("click", () => aSetMatchMode(4));
 
-  // Reset player 2 pick display
-  aP2PickEl.textContent = "-";
+// ==============================
+// API (CPU CHOICE)
+// ==============================
 
-  // Reset round result display
-  aRoundResultEl.textContent = "Make your move!";
-}
-
-// Updates the score display in the UI
-function aUpdateScoreUI() {
-  // Update Player 1 score display
-  aP1ScoreEl.textContent = aP1Score;
-
-  // Update Player 2 / CPU score display
-  aP2ScoreEl.textContent = aP2Score;
-
-  // Update ties display
-  aTiesEl.textContent = aTies;
-}
-
-// Generates a random choice for the CPU
-function aRandomCpuChoice() {
-  let aNum = Math.floor(Math.random() * 3);
-
-  // Map number to a choice
-  if (aNum === 0) return "rock";
-  if (aNum === 1) return "paper";
-  return "scissors";
-}
-//Get the CPU choice from the API.
-// Expects the API to return "rock", "paper", or "scissors"
-// 1 plain text return either 
-// 1 plain text: "rock"
-// 1 Json {"choice":"rock"}
 function aGetCpuChoiceFromApi() {
   return fetch(aApiUrl)
-    .then(function (response) {
-      return response.text();
-    }).then(function (text) {
-      return text.trim().toLocaleLowerCase();
+    .then((response) => {
+      if (!response.ok) throw new Error("API error");
+      return response.json();
+    })
+    .then((data) => {
+      if (typeof data === "string") return data.toLowerCase();
+      if (data.choice) return data.choice.toLowerCase();
+      throw new Error("Bad data");
+    })
+    .catch(() => {
+      // fallback so game NEVER freezes
+      const fallback = ["rock", "paper", "scissors", "lizard", "spock"];
+      return fallback[Math.floor(Math.random() * fallback.length)];
     });
-  }
-// Determines the winner of a round
+}
+
+// ==============================
+// GAME LOGIC
+// ==============================
+
 function aGetWinner(aP1, aP2) {
-  // Check for tie
   if (aP1 === aP2) return "tie";
 
-  // Player 1 win conditions
-  if (aP1 === "rock" && aP2 === "scissors") return "p1";
-  if (aP1 === "paper" && aP2 === "rock") return "p1";
-  if (aP1 === "scissors" && aP2 === "paper") return "p1";
+  if (aP1 === "scissors" && (aP2 === "paper" || aP2 === "lizard")) return "p1";
+  if (aP1 === "rock" && (aP2 === "lizard" || aP2 === "scissors")) return "p1";
+  if (aP1 === "paper" && (aP2 === "rock" || aP2 === "spock")) return "p1";
+  if (aP1 === "lizard" && (aP2 === "spock" || aP2 === "paper")) return "p1";
+  if (aP1 === "spock" && (aP2 === "scissors" || aP2 === "rock")) return "p1";
 
-  // Otherwise Player 2 wins
   return "p2";
 }
 
-// Plays one round of the game
-function aPlayRound(aP1Choice, aP2Choice) {
-  // Display player choices in the UI
-  aP1PickEl.textContent = aP1Choice;
-  aP2PickEl.textContent = aP2Choice;
+function aPlayRound() {
+  if (aGameOver || !aP1Pick || !aP2Pick) return;
 
-  // Determine winner
-  let aWinner = aGetWinner(aP1Choice, aP2Choice);
+  const aWinner = aGetWinner(aP1Pick, aP2Pick);
 
-  // Handle tie case
-  if (aWinner === "tie") {
-    aTies = aTies + 1;
-    aRoundResultEl.textContent = "It's a tie!";
-  }
-  // Handle player 1 win case
-  else if (aWinner === "p1") {
-    aP1Score = aP1Score + 1;
-    aRoundResultEl.textContent = "Player 1 wins!";
-  }
-  // Handle player 2 / CPU win case
-  else {
-    aP2Score = aP2Score + 1;
-
-    if (aMode === "cpu") {
-      aRoundResultEl.textContent = "CPU wins!";
-    } else {
-      aRoundResultEl.textContent = "Player 2 wins!";
-    }
+  if (aWinner === "p1") {
+    aP1Score++;
+    aRoundResultEl.textContent = "Player 1 wins the round!";
+  } else if (aWinner === "p2") {
+    aP2Score++;
+    aRoundResultEl.textContent =
+      aMode === "cpu" ? "CPU wins the round!" : "Player 2 wins the round!";
+  } else {
+    aRoundResultEl.textContent = "Tie round!";
   }
 
-  // Refresh score display
   aUpdateScoreUI();
+
+  if (aP1Score === aWinTarget) {
+    aRoundResultEl.textContent = "🏆 Player 1 wins the match!";
+    aGameOver = true;
+  }
+
+  if (aP2Score === aWinTarget) {
+    aRoundResultEl.textContent =
+      aMode === "cpu"
+        ? "🏆 CPU wins the match!"
+        : "🏆 Player 2 wins the match!";
+    aGameOver = true;
+  }
+
+  // reset picks for next round
+  aP1Pick = "";
+  aP2Pick = "";
 }
 
-// Handles Player 1 picking rock, paper, or scissors
-function aHandleP1Pick(aChoice) {
-  // If the game is in CPU mode
+// ==============================
+// HANDLERS
+// ==============================
+
+function aHandleP1Pick(aPick) {
+  if (aGameOver) return;
+
+  aP1Pick = aPick;
+  document.getElementById("p1Pick").textContent = aPick;
+
   if (aMode === "cpu") {
-    let aCpuChoice = aRandomCpuChoice();
-    aPlayRound(aChoice, aCpuChoice);
-    return;
-  }
-  
-  if (aMode === "cpu") {
-    aP1PickEl.textContent = aChoice;
-    aP2PickEl.textContent = "...";
-    aRoundResultEl.textContent = "CPU is making a choice...";
-    
-    aGetCpuChoiceFromApi().then(function (cpuChoice) {
-      aPlayRound(aChoice, cpuChoice);
-      return;
+    aRoundResultEl.textContent = "CPU is thinking...";
+    aGetCpuChoiceFromApi().then((cpuPick) => {
+      aP2Pick = cpuPick;
+      document.getElementById("p2Pick").textContent = cpuPick;
+      aPlayRound();
     });
-    
-  }
-  // ----- PVP MODE LOGIC -----
-
-  // Store Player 1's choice temporarily
-  aPendingChoice = aChoice;
-
-  // Show Player 1's choice
-  aP1PickEl.textContent = aChoice;
-
-  // Hide Player 2's choice
-  aP2PickEl.textContent = "?";
-
-  // Update instructions
-  aRoundResultEl.textContent = "Player 2, make your pick!";
-  aP2Hint.textContent = "Your turn!";
-}
-
-// Handles Player 2 picking rock, paper, or scissors
-function aHandleP2Pick(aChoice) {
-  // If Player 1 has not picked yet, do nothing
-  if (aPendingChoice === "") {
-    return;
-  }
-
-  // Play the round
-  aPlayRound(aPendingChoice, aChoice);
-
-  // Clear Player 1's stored choice
-  aPendingChoice = "";
-
-  // Reset hint text
-  if (aMode === "pvp") {
-    aP2Hint.textContent = "Waiting for Player 1...";
+  } else {
+    aRoundResultEl.textContent = "Player 2, make your choice";
+    aEnableP2Buttons(true);
   }
 }
 
-// ================= EVENT LISTENERS =================
+function aHandleP2Pick(aPick) {
+  if (aGameOver) return;
+  if (aMode !== "pvp") return;
+  if (!aP1Pick) return;
 
-// Mode buttons
-aBtnModeCpu.addEventListener("click", function () {
-  aSetMode("cpu");
-});
+  aP2Pick = aPick;
+  document.getElementById("p2Pick").textContent = aPick;
+  aPlayRound();
+  aEnableP2Buttons(false);
+}
 
-aBtnModePvp.addEventListener("click", function () {
-  aSetMode("pvp");
-});
+// ==============================
+// ENABLE / DISABLE P2 BUTTONS
+// ==============================
 
-// Player 1 buttons
-aBtnP1Rock.addEventListener("click", function () {
-  aHandleP1Pick("rock");
-});
+function aEnableP2Buttons(enable) {
+  aBtnP2Rock.disabled = !enable;
+  aBtnP2Paper.disabled = !enable;
+  aBtnP2Scissors.disabled = !enable;
+  aBtnP2Lizard.disabled = !enable;
+  aBtnP2Spock.disabled = !enable;
+}
 
-aBtnP1Paper.addEventListener("click", function () {
-  aHandleP1Pick("paper");
-});
+// ==============================
+// At game start, disable P2 buttons
+// ==============================
+aEnableP2Buttons(false);
 
-aBtnP1Scissors.addEventListener("click", function () {
-  aHandleP1Pick("scissors");
-});
+// ==============================
+// MODE SWITCH (CPU / PVP)
+// ==============================
 
-// Player 2 buttons (PVP only)
-aBtnP2Rock.addEventListener("click", function () {
-  aHandleP2Pick("rock");
-});
+function aSetMode(newMode) {
+  aMode = newMode;
+  aGameOver = false;
+  aP1Pick = "";
+  aP2Pick = "";
+  aResetScores();
 
-aBtnP2Paper.addEventListener("click", function () {
-  aHandleP2Pick("paper");
-});
-
-aBtnP2Scissors.addEventListener("click", function () {
-  aHandleP2Pick("scissors");
-});
-
-// Play Again button (clears picks only)
-aBtnPlayAgain.addEventListener("click", function () {
-  aPendingChoice = "";
-  aClearPicksUI();
-
-  if (aMode === "pvp") {
-    aP2Hint.textContent = "Waiting for Player 1...";
+  if (aMode === "cpu") {
+    aBtnModeCpu.classList.add("active");
+    aBtnModePvp.classList.remove("active");
+    aRoundResultEl.textContent = "You are playing against the CPU.";
+  } else {
+    aBtnModePvp.classList.add("active");
+    aBtnModeCpu.classList.remove("active");
+    aRoundResultEl.textContent = "Player 1, make your choice.";
   }
-});
 
-// Reset Game button (resets scores and picks)
-aBtnReset.addEventListener("click", function () {
+  // disable P2 buttons at mode switch
+  aEnableP2Buttons(false);
+}
+
+// Mode button clicks
+aBtnModeCpu.onclick = () => aSetMode("cpu");
+aBtnModePvp.onclick = () => aSetMode("pvp");
+
+// ==============================
+// UI HELPERS
+// ==============================
+
+function aUpdateScoreUI() {
+  aP1ScoreEl.textContent = aP1Score;
+  aP2ScoreEl.textContent = aP2Score;
+}
+
+function aResetScores() {
   aP1Score = 0;
   aP2Score = 0;
-  aTies = 0;
-  aPendingChoice = "";
+  aUpdateScoreUI();
+  aRoundResultEl.textContent = "";
+  document.getElementById("p1Pick").textContent = "-";
+  document.getElementById("p2Pick").textContent = "-";
+}
 
-  aClearPicksUI();
+// ==============================
+// BUTTON EVENTS
+// ==============================
+
+// Player 1
+aBtnP1Rock.onclick = () => aHandleP1Pick("rock");
+aBtnP1Paper.onclick = () => aHandleP1Pick("paper");
+aBtnP1Scissors.onclick = () => aHandleP1Pick("scissors");
+aBtnP1Lizard.onclick = () => aHandleP1Pick("lizard");
+aBtnP1Spock.onclick = () => aHandleP1Pick("spock");
+
+// Player 2
+aBtnP2Rock.onclick = () => aHandleP2Pick("rock");
+aBtnP2Paper.onclick = () => aHandleP2Pick("paper");
+aBtnP2Scissors.onclick = () => aHandleP2Pick("scissors");
+aBtnP2Lizard.onclick = () => aHandleP2Pick("lizard");
+aBtnP2Spock.onclick = () => aHandleP2Pick("spock");
+
+// ==============================
+// CLEAR PICKS / RESET BUTTONS
+// ==============================
+
+const aBtnPlayAgain = document.getElementById("btnPlayAgain");
+const aBtnReset = document.getElementById("btnReset");
+
+// Play Again: clears picks but keeps scores and mode
+aBtnPlayAgain.onclick = () => {
+  aP1Pick = "";
+  aP2Pick = "";
+  aRoundResultEl.textContent = aMode === "cpu" ? "Make a pick. CPU will pick automatically." : "Player 1, make your choice.";
+  aEnableP2Buttons(false);
+  document.getElementById("p1Pick").textContent = "-";
+  document.getElementById("p2Pick").textContent = "-";
+};
+
+// Reset Game: clears scores, picks, and sets mode back to CPU, match to 1 win
+aBtnReset.onclick = () => {
+  aP1Score = 0;
+  aP2Score = 0;
   aUpdateScoreUI();
 
-  if (aMode === "pvp") {
-    aP2Hint.textContent = "Waiting for Player 1...";
-  }
-});
+  aP1Pick = "";
+  aP2Pick = "";
+  document.getElementById("p1Pick").textContent = "-";
+  document.getElementById("p2Pick").textContent = "-";
+
+  aRoundResultEl.textContent = "You are playing against the CPU.";
+
+  aSetMode("cpu");
+  aSetMatchMode(1);
+  aEnableP2Buttons(false);
+};
